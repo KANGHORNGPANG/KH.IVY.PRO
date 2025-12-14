@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SPM Target Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- 项目JavaScript文件 -->
+    <script src="languages.js" defer></script>
+    <script src="subjects.js" defer></script>
+    <script src="rewards.js" defer></script>
+    <script src="effects.js" defer></script>
+    <script src="page-builders.js" defer></script>
+    <script src="pdf-generator.js" defer></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <!-- Header部分 -->
+    <div class="header container">
+        <div class="title">
+            <h1 id="main-title">SPM TARGET TRACKER</h1>
+            <h2 id="student-name">NAME: IVY YAW</h2>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <button class="action-btn save" onclick="saveAllData()">
+                <span>💾</span> <span id="save-text">Save All</span>
+            </button>
+            <button class="action-btn reset" onclick="resetAllData()">
+                <span>🔄</span> <span id="reset-text">Reset All</span>
+            </button>
+            <button class="action-btn report" onclick="generateReport()">
+                <span>📊</span> <span id="report-text">Generate Report</span>
+            </button>
+            <button class="action-btn pdf" onclick="saveAsPDF()">
+                <span>📄</span> <span id="pdf-text">Save as PDF</span>
+            </button>
+            <button class="action-btn print" onclick="printReport()">
+                <span>🖨️</span> <span id="print-text">Print Report</span>
+            </button>
+            <button class="action-btn language" onclick="toggleLanguage()">
+                <span>🌐</span> <span id="language-text">EN/中文</span>
+            </button>
+            <button class="action-btn theme" onclick="toggleTheme()">
+                <span>🎨</span> <span id="theme-text">Theme</span>
+            </button>
+        </div>
+
+        <!-- 标签页 -->
+        <div class="tabs">
+            <div class="tab active" data-tab="t1">
+                <span id="tab-t1">Target 1</span>
+            </div>
+            <div class="tab" data-tab="t2">
+                <span id="tab-t2">Target 2</span>
+            </div>
+            <div class="tab" data-tab="trial">
+                <span id="tab-trial">Trial</span>
+            </div>
+            <div class="tab" data-tab="spm">
+                <span id="tab-spm">Final SPM</span>
+            </div>
+        </div>
+
+        <!-- Target 1 页面 -->
+        <div class="card" id="page-t1">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div><strong id="t1-title">Target 1 — Enter Your First Scores</strong></div>
+            </div>
+
+            <div class="grid header">
+                <div class="cell" id="header-no">No</div>
+                <div class="cell" id="header-subject">Subject</div>
+                <div class="cell" id="header-current">Current</div>
+                <div class="cell" id="header-target">Target</div>
+                <div class="cell" id="header-yourscore">Your Score</div>
+                <div class="cell" id="header-result">Result</div>
+                <div class="cell" id="header-grade">Grade</div>
+            </div>
+
+            <div id="list-t1"></div>
+            
+            <div class="submit-section" id="submit-t1-section">
+                <button class="submit-btn" onclick="submitAllScores('t1')">
+                    <span>📤</span> <span id="submit-t1-text">Submit All Target 1 Scores</span>
+                </button>
+            </div>
+            
+            <div class="overall-stats" id="stats-t1"></div>
+            <div class="chart-container">
+                <div class="chart-title" id="chart-t1-title">Target 1 Performance Chart</div>
+                <canvas id="chart-t1"></canvas>
+            </div>
+        </div>
+
+        <!-- Target 2 页面 -->
+        <div class="card" id="page-t2" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div><strong id="t2-title">Target 2 — Compare with Target 1 and Enter Second Scores</strong></div>
+            </div>
+
+            <div class="grid header">
+                <div class="cell" id="header-no2">No</div>
+                <div class="cell" id="header-subject2">Subject</div>
+                <div class="cell" id="header-target1">Target 1</div>
+                <div class="cell" id="header-current-target">Current Target</div>
+                <div class="cell" id="header-yourscore2">Your Score</div>
+                <div class="cell" id="header-result-compare">Result / Compare</div>
+                <div class="cell" id="header-grade2">Grade</div>
+            </div>
+
+            <div id="list-t2"></div>
+            
+            <div class="submit-section" id="submit-t2-section">
+                <button class="submit-btn" onclick="submitAllScores('t2')">
+                    <span>📤</span> <span id="submit-t2-text">Submit All Target 2 Scores</span>
+                </button>
+            </div>
+            
+            <div class="overall-stats" id="stats-t2"></div>
+            <div class="chart-container">
+                <div class="chart-title" id="chart-t2-title">Target 2 Performance Chart</div>
+                <canvas id="chart-t2"></canvas>
+            </div>
+        </div>
+
+        <!-- Trial 页面 -->
+        <div class="card" id="page-trial" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div><strong id="trial-title">Trial — Compare with Target 2 and Enter Trial Scores</strong></div>
+            </div>
+
+            <div class="grid header">
+                <div class="cell" id="header-no3">No</div>
+                <div class="cell" id="header-subject3">Subject</div>
+                <div class="cell" id="header-target2">Target 2</div>
+                <div class="cell" id="header-current-target2">Current Target</div>
+                <div class="cell" id="header-yourscore3">Your Score</div>
+                <div class="cell" id="header-result-compare2">Result / Compare</div>
+                <div class="cell" id="header-grade3">Grade</div>
+            </div>
+
+            <div id="list-trial"></div>
+            
+            <div class="submit-section" id="submit-trial-section">
+                <button class="submit-btn" onclick="submitAllScores('trial')">
+                    <span>📤</span> <span id="submit-trial-text">Submit All Trial Scores</span>
+                </button>
+            </div>
+            
+            <div class="overall-stats" id="stats-trial"></div>
+            <div class="chart-container">
+                <div class="chart-title" id="chart-trial-title">Trial Performance Chart</div>
+                <canvas id="chart-trial"></canvas>
+            </div>
+        </div>
+
+        <!-- Final SPM 页面 -->
+        <div class="card" id="page-spm" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div><strong id="spm-title">Final SPM — Compare with Trial and Enter Final SPM Scores</strong></div>
+            </div>
+
+            <div class="grid header">
+                <div class="cell" id="header-no4">No</div>
+                <div class="cell" id="header-subject4">Subject</div>
+                <div class="cell" id="header-trial">Trial</div>
+                <div class="cell" id="header-current-target3">Current Target</div>
+                <div class="cell" id="header-yourscore4">Your Score</div>
+                <div class="cell" id="header-result-compare3">Result / Compare</div>
+                <div class="cell" id="header-grade4">Grade</div>
+            </div>
+
+            <div id="list-spm"></div>
+            
+            <div class="submit-section" id="submit-spm-section">
+                <button class="submit-btn" onclick="submitAllScores('spm')">
+                    <span>📤</span> <span id="submit-spm-text">Submit All Final SPM Scores</span>
+                </button>
+            </div>
+            
+            <div class="overall-stats" id="stats-spm"></div>
+            <div class="chart-container">
+                <div class="chart-title" id="chart-spm-title">Final SPM Performance Chart</div>
+                <canvas id="chart-spm"></canvas>
+            </div>
+        </div>
+
+        <!-- 等级标准 -->
+        <div class="grade-scale">
+            <h3 id="grade-scale-title">SPM Grade Scale</h3>
+            <table class="grade-table">
+                <thead>
+                    <tr>
+                        <th id="score-range">Score Range</th>
+                        <th id="grade-header">Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>90-100</td><td><span class="grade-badge grade-Aplus">A+</span></td></tr>
+                    <tr><td>80-89</td><td><span class="grade-badge grade-A">A</span></td></tr>
+                    <tr><td>70-79</td><td><span class="grade-badge grade-Aminus">A-</span></td></tr>
+                    <tr><td>65-69</td><td><span class="grade-badge grade-Bplus">B+</span></td></tr>
+                    <tr><td>60-64</td><td><span class="grade-badge grade-B">B</span></td></tr>
+                    <tr><td>55-59</td><td><span class="grade-badge grade-Cplus">C+</span></td></tr>
+                    <tr><td>50-54</td><td><span class="grade-badge grade-C">C</span></td></tr>
+                    <tr><td>45-49</td><td><span class="grade-badge grade-D">D</span></td></tr>
+                    <tr><td>40-44</td><td><span class="grade-badge grade-E">E</span></td></tr>
+                    <tr><td>0-39</td><td><span class="grade-badge grade-F">F</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 奖励系统 -->
+        <div class="reward-section">
+            <h3 id="reward-system-title">Form 5 First Exam Reward System</h3>
+            
+            <div class="reward-grid" id="reward-grid">
+                <!-- 奖励项将由JavaScript动态生成 -->
+            </div>
+            
+            <div class="reward-bonus">
+                <h4 id="bonus-rewards-title">Bonus Rewards</h4>
+                <ul>
+                    <li id="bonus1">All subjects pass: RM30</li>
+                    <li id="bonus2">All subjects pass with improvement: RM50</li>
+                    <li id="bonus3">Directly achieve Target 2: RM15 per subject</li>
+                    <li id="bonus4">Decreased scores: Consolation reward only</li>
+                </ul>
+            </div>
+            
+            <div class="total-reward">
+                <h4 id="total-reward-title">Total Reward Calculation</h4>
+                <div class="total-amount" id="total-reward">RM0.00</div>
+                <div class="dictation-bonus" id="dictation-bonus-text">
+                    Dictation 100% bonus: +0.5% per perfect dictation<br>
+                    Example: Total reward RM300 + 10 perfect dictations (5%) = RM315
+                </div>
+                <div style="margin-top: 15px;">
+                    <label for="dictation-count" id="dictation-label" style="color: #831843;">Number of perfect dictations:</label>
+                    <input type="number" id="dictation-count" min="0" max="100" value="0" style="width: 80px; padding: 5px; margin-left: 10px; border: 1px solid #f9a8d4; border-radius: 4px; color: #831843;">
+                    <button onclick="calculateReward()" style="margin-left: 10px; padding: 5px 10px; background: linear-gradient(135deg, #f472b6, #ec4899); color: white; border: none; border-radius: 4px; cursor: pointer;" id="calculate-btn">Calculate</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div id="copyright">SPM Target Tracker © 2026</div>
+            <div class="signature" id="signature-text">BY: KH@ONLY GIVE TO IVY YAW ZI XUAN</div>
+        </div>
+    </div>
+</body>
+</html>
