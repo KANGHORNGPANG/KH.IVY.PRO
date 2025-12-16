@@ -1,199 +1,333 @@
-// 完全修复的saveAsPDF函数
+// ===============================
+// 完全修复的 saveAsPDF 函数
+// ===============================
 function saveAsPDF() {
   try {
-    // 检查jsPDF是否可用
     if (typeof jspdf !== 'undefined') {
-      // 如果有全局jspdf变量
       const doc = new jspdf.jsPDF('p', 'mm', 'a4');
       generatePDFContent(doc);
     } else if (typeof window.jspdf !== 'undefined') {
-      // 如果有window.jspdf变量
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
       generatePDFContent(doc);
     } else {
-      // 尝试动态加载jsPDF
-      alert('PDF library loading, please wait...');
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js';
-      script.onload = function() {
-        const doc = new window.jspdf.jsPDF('p', 'mm', 'a4');
-        generatePDFContent(doc);
-      };
-      script.onerror = function() {
-        alert('Failed to load PDF library. Please check your internet connection.');
-      };
+      script.onload = () => generatePDFContent(new window.jspdf.jsPDF());
       document.head.appendChild(script);
-      return;
     }
-  } catch (error) {
-    console.error('PDF save error:', error);
-    alert('Error saving PDF: ' + error.message + '\nPlease try again or check your internet connection.');
+  } catch (e) {
+    alert('PDF Error: ' + e.message);
   }
 }
 
-// 修复的PDF内容生成函数
+// ===============================
+// PDF 内容生成
+// ===============================
 function generatePDFContent(doc) {
-  // 标题 - 修复：确保所有文本都是字符串
+
+  // ===== 标题 =====
   doc.setFontSize(24);
   doc.setTextColor(124, 58, 237);
   doc.text('SPM TARGET TRACKER REPORT', 105, 20, { align: 'center' });
-  
+
   doc.setFontSize(14);
   doc.setTextColor(168, 85, 247);
   doc.text('Student: IVY YAW ZI XUAN', 105, 30, { align: 'center' });
-  
+
   const date = new Date().toLocaleDateString();
   doc.setFontSize(10);
   doc.setTextColor(139, 93, 93);
   doc.text(`Report Generated: ${date}`, 105, 37, { align: 'center' });
-  
-  // 添加分隔线
-  doc.setDrawColor(244, 114, 182);
-  doc.setLineWidth(0.5);
+
   doc.line(20, 42, 190, 42);
-  
   let yPos = 50;
-  
-  // TARGET 1 成绩表标题
+
+  // ===============================
+  // 表头
+  // ===============================
   doc.setFontSize(16);
   doc.setTextColor(236, 72, 153);
   doc.text('TARGET 1 SCORES AND REWARDS', 20, yPos);
   yPos += 10;
-  
-  // 表头
+
   doc.setFillColor(252, 231, 243);
   doc.rect(20, yPos, 170, 8, 'F');
+
   doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
   doc.setFont(undefined, 'bold');
-  
-  // 表头列
+  doc.setTextColor(0, 0, 0);
   doc.text('No.', 22, yPos + 6);
   doc.text('Subject', 30, yPos + 6);
   doc.text('Current', 70, yPos + 6);
-  doc.text('Target', 90, yPos + 6);
+  doc.text('Target 1', 90, yPos + 6);
   doc.text('Score', 110, yPos + 6);
   doc.text('Achieves', 130, yPos + 6);
   doc.text('Reward', 165, yPos + 6);
-  
+
   yPos += 8;
-  
-  let totalReward = 0;
-  
-  // 科目数据行 - 修复：确保所有值都转换为字符串
-  subjects.forEach((s, index) => {
+
+  let baseReward = 0;
+  let allPass = true;
+
+  // ===============================
+  // 科目列
+  // ===============================
+  subjects.forEach((s, i) => {
+
     const t1Score = load(makeKey("t1", s.id), "");
-    const scoreNum = t1Score ? Number(t1Score) : 0;
-    
-    // 计算奖励
+    const score = t1Score !== "" ? Number(t1Score) : NaN;
     const reward = calculateSubjectReward(s.id, t1Score, s.t1, s.t2, s.current);
-    totalReward += reward;
-    
-    // 交替行背景色
-    if (index % 2 === 0) {
+    baseReward += reward;
+
+    if (isNaN(score) || score < 40) allPass = false;
+
+    if (i % 2 === 0) {
       doc.setFillColor(253, 242, 248);
       doc.rect(20, yPos, 170, 8, 'F');
     }
-    
-    doc.setFont(undefined, 'normal');
+
     doc.setFontSize(9);
-    
-    // No. - 修复：转换为字符串
-    doc.text((index + 1).toString(), 22, yPos + 6);
-    
-    // Subject
-    const shortName = s.name.length > 18 ? s.name.substring(0, 15) + '...' : s.name;
-    doc.text(shortName, 30, yPos + 6);
-    
-    // Current - 修复：确保是字符串
-    doc.text(s.current.toString(), 70, yPos + 6);
-    
-    // Target - 修复：确保是字符串
-    doc.text(s.t1.toString(), 90, yPos + 6);
-    
-    // Score - 修复：处理空值和确保是字符串
-    const scoreText = t1Score !== "" ? t1Score.toString() : "-";
-    doc.text(scoreText, 110, yPos + 6);
-    
-    // Achieves
-    let achievesText = "-";
-    if (t1Score !== "" && !isNaN(scoreNum)) {
-      if (scoreNum >= s.t2) {
-        achievesText = "Target 2 ✓";
-      } else if (scoreNum >= s.t1) {
-        achievesText = "Target 1 ✓";
-      } else if (scoreNum >= 40) {
-        achievesText = "Pass";
-      } else {
-        achievesText = "Fail";
-      }
+    doc.setFont(undefined, 'normal');
+
+    doc.text(String(i + 1), 22, yPos + 6);
+    doc.text(s.name.length > 18 ? s.name.slice(0, 15) + '...' : s.name, 30, yPos + 6);
+    doc.text(String(s.current), 70, yPos + 6);
+    doc.text(String(s.t1), 90, yPos + 6);
+    doc.text(t1Score !== "" ? String(t1Score) : "-", 110, yPos + 6);
+
+    // ✅ Achieves 显示 Target 几
+    let achieveText = "-";
+    if (!isNaN(score)) {
+      if (score >= s.t2) achieveText = "Target 2 ✓";
+      else if (score >= s.t1) achieveText = "Target 1 ✓";
+      else achieveText = "Below Target";
     }
-    doc.text(achievesText, 130, yPos + 6);
-    
-    // Reward - 修复：确保是字符串
+    doc.text(achieveText, 128, yPos + 6);
+
     doc.text(`RM${reward}`, 165, yPos + 6);
-    
     yPos += 8;
-    
-    // 检查是否需要新页面
-    if (yPos > 270 && index < subjects.length - 1) {
-      doc.addPage();
-      yPos = 20;
-    }
   });
-  
-  yPos += 10;
-  
-  // 总奖励部分
-  doc.setFillColor(240, 249, 235);
-  doc.rect(20, yPos, 170, 25, 'F');
-  doc.setDrawColor(52, 211, 153);
-  doc.setLineWidth(1);
-  doc.rect(20, yPos, 170, 25);
-  
-  // 听写奖励
-  const dictationCount = parseInt(document.getElementById('dictation-count').value) || 0;
-  const bonusMultiplier = 1 + (dictationCount * 0.005);
-  const finalReward = totalReward * bonusMultiplier;
-  
-  doc.setFontSize(16);
-  doc.setFont(undefined, 'bold');
-  doc.setTextColor(5, 150, 105);
-  doc.text('TOTAL REWARD', 105, yPos + 10, { align: 'center' });
-  
-  yPos += 20;
-  
-  // 最终总奖励 - 修复：确保是字符串
-  doc.setFontSize(32);
-  doc.setFont(undefined, 'bold');
-  doc.setTextColor(236, 72, 153);
-  doc.text(`RM${finalReward.toFixed(2)}`, 105, yPos, { align: 'center' });
-  
+
   yPos += 15;
+
+  // ===============================
+  // 计算变量
+  // ===============================
+  const dictation = 5;
+  const extraPercent = dictation * 0.5;
+  const multiplier = 100 + extraPercent;
+  const rewardAfterMultiplier = baseReward * (multiplier / 100);
+  const allPassBonus = allPass ? 30 : 0;
+  const allImproveBonus = 50;
+  const finalTotal = rewardAfterMultiplier + allPassBonus + allImproveBonus;
+
+  // ===============================
+  // 格子1 (整行) - Reward Calculation
+  // ===============================
+  const fullWidth = 170;
+  const boxHeight1 = 40;
   
-  // 奖励明细 - 修复：确保是字符串
-  doc.setFontSize(10);
+  // 格子1：浅蓝色格子
+  doc.setFillColor(219, 234, 254);
+  doc.rect(20, yPos, fullWidth, boxHeight1, 'F');
+  
+  // 加深边框
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1.5);
+  doc.rect(20, yPos, fullWidth, boxHeight1);
+  doc.setLineWidth(0.5);
+  
+  // 标题
+  doc.setFontSize(13);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 128);
+  doc.text('Reward Calculation', 105, yPos + 9, { align: 'center' });
+  
+  // 内容
+  let textY = yPos + 17;
+  doc.setFontSize(9);
+  doc.setFont(undefined, 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text(`Base Reward: RM${totalReward.toFixed(2)}`, 30, yPos);
   
-  if (dictationCount > 0) {
-    yPos += 5;
-    doc.text(`Perfect Dictations: ${dictationCount} (+${(dictationCount * 0.5).toFixed(1)}%)`, 30, yPos);
+  // 左列
+  const leftColX = 25;
+  const leftValueX = 70;
+  
+  // 右列
+  const rightColX = 105;
+  const rightValueX = 150;
+  
+  // 第一行
+  doc.text('Base Reward:', leftColX, textY);
+  doc.text(`RM${baseReward.toFixed(2)}`, leftValueX, textY);
+  
+  doc.text('Perfect dictations:', rightColX, textY);
+  doc.text(`${dictation}`, rightValueX, textY);
+  textY += 6;
+  
+  // 第二行
+  doc.text('Extra Percentage:', leftColX, textY);
+  doc.text(`${dictation} × 0.5% = ${extraPercent}%`, leftValueX, textY);
+  
+  doc.text('Total Percentage:', rightColX, textY);
+  doc.text(`100% + ${extraPercent}% = ${multiplier}%`, rightValueX, textY);
+  textY += 6;
+  
+  // 第三行
+  doc.text('Multiplier:', leftColX, textY);
+  doc.text(`${multiplier}%`, leftValueX, textY);
+  
+  doc.text('Final Calculation:', rightColX, textY);
+  doc.text(`RM${baseReward.toFixed(2)} × ${multiplier}%`, rightValueX, textY);
+  textY += 6;
+  
+  // 第四行
+  doc.text('Final Reward:', leftColX, textY);
+  doc.text(`RM${rewardAfterMultiplier.toFixed(2)}`, leftValueX, textY);
+
+  yPos += boxHeight1 + 10;
+
+  // ===============================
+  // 格子2和格子3 (并排)
+  // ===============================
+  const halfWidth = (fullWidth - 10) / 2;
+  
+  // 格子2：浅粉色格子 - Extra Bonus Reward (左边)
+  doc.setFillColor(255, 228, 240);
+  doc.rect(20, yPos, halfWidth, 50, 'F');
+  
+  // 加深边框
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1.5);
+  doc.rect(20, yPos, halfWidth, 50);
+  doc.setLineWidth(0.5);
+  
+  // 标题
+  doc.setFontSize(13);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(199, 21, 133);
+  doc.text('Extra Bonus Reward', 20 + halfWidth/2, yPos + 9, { align: 'center' });
+  
+  // ALL PASS 和 ALL IMPROVE
+  const checkY = yPos + 17;
+  const checkBoxSize = 8;
+  const checkBoxX = 20 + halfWidth - 20;
+  
+  // ALL PASS
+  doc.setFontSize(9);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 0);
+  
+  doc.text(`ALL PASS (RM${allPassBonus})`, 25, checkY);
+  
+  // 打勾格子
+  doc.setFillColor(255, 255, 255);
+  doc.rect(checkBoxX, checkY - 4, checkBoxSize, checkBoxSize, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(checkBoxX, checkY - 4, checkBoxSize, checkBoxSize);
+  
+  // 打勾符号
+  if (allPass) {
+    doc.setDrawColor(0, 128, 0);
+    doc.setLineWidth(0.8);
+    const centerX = checkBoxX + checkBoxSize/2;
+    const centerY = checkY - 4 + checkBoxSize/2;
+    doc.line(centerX - 2, centerY - 1, centerX, centerY + 2);
+    doc.line(centerX, centerY + 2, centerX + 3, centerY - 2);
   }
   
-  yPos += 10;
+  // ALL IMPROVE
+  const checkY2 = checkY + 12;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.setTextColor(0, 0, 0);
   
-  // 页脚
+  doc.text(`ALL IMPROVE (RM${allImproveBonus})`, 25, checkY2);
+  
+  // 打勾格子
+  doc.setFillColor(255, 255, 255);
+  doc.rect(checkBoxX, checkY2 - 4, checkBoxSize, checkBoxSize, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(checkBoxX, checkY2 - 4, checkBoxSize, checkBoxSize);
+  
+  // 打勾符号（总是有）
+  doc.setDrawColor(0, 128, 0);
+  doc.setLineWidth(0.8);
+  const centerX2 = checkBoxX + checkBoxSize/2;
+  const centerY2 = checkY2 - 4 + checkBoxSize/2;
+  doc.line(centerX2 - 2, centerY2 - 1, centerX2, centerY2 + 2);
+  doc.line(centerX2, centerY2 + 2, centerX2 + 3, centerY2 - 2);
+  
+  doc.setLineWidth(0.5);
+
+  // 格子3：浅紫色格子 - Final Calculation (右边)
+  const box3X = 20 + halfWidth + 10;
+  
+  doc.setFillColor(230, 220, 250);
+  doc.rect(box3X, yPos, halfWidth, 50, 'F');
+  
+  // 加深边框
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1.5);
+  doc.rect(box3X, yPos, halfWidth, 50);
+  doc.setLineWidth(0.5);
+  
+  // 标题
+  doc.setFontSize(13);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(75, 0, 130);
+  doc.text('Final Calculation', box3X + halfWidth/2, yPos + 9, { align: 'center' });
+  
+  // 内容
+  let calcY = yPos + 17;
   doc.setFontSize(9);
-  doc.setTextColor(139, 93, 93);
-  doc.text('Generated by SPM Target Tracker © 2026', 105, yPos, { align: 'center' });
-  yPos += 5;
-  doc.text('BY: KH@ONLY GIVE TO IVY YAW ZI XUAN', 105, yPos, { align: 'center' });
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 0);
   
-  // 保存PDF
-  const fileName = `SPM_Target_Report_${date.replace(/\//g, '-')}.pdf`;
-  doc.save(fileName);
+  const calcX = box3X + 5;
+  doc.text(`RM${baseReward.toFixed(2)} × ${multiplier}%`, calcX, calcY);
+  doc.text(`= RM${rewardAfterMultiplier.toFixed(2)}`, calcX + 30, calcY);
+  calcY += 7;
   
-  alert('PDF saved successfully! File: ' + fileName);
+  doc.text(`RM${rewardAfterMultiplier.toFixed(2)} + RM${allPassBonus} + RM${allImproveBonus}`, calcX, calcY);
+  calcY += 7;
+  
+  doc.text(`= RM${finalTotal.toFixed(2)}`, calcX, calcY);
+
+  yPos += 50 + 10;
+
+  // ===============================
+  // 格子4 (整行) - TOTAL REWARD
+  // ===============================
+  const boxHeight4 = 50;
+  
+  // 浅青色格子
+  doc.setFillColor(224, 255, 255);
+  doc.rect(20, yPos, fullWidth, boxHeight4, 'F');
+  
+  // 加深边框
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1.5);
+  doc.rect(20, yPos, fullWidth, boxHeight4);
+  doc.setLineWidth(0.5);
+  
+  // 标题
+  doc.setFontSize(18);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('TOTAL REWARD', 105, yPos + 17, { align: 'center' });
+  
+  // 金额
+  doc.setFontSize(30);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text(`RM${finalTotal.toFixed(2)}`, 105, yPos + 32, { align: 'center' });
+
+  // ===============================
+  // 保存PDF (这行之前缺失了)
+  // ===============================
+  doc.save(`SPM_Target_Report_${date.replace(/\//g, '-')}.pdf`);
 }
