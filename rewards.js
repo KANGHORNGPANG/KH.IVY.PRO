@@ -38,7 +38,7 @@ function calculateSubjectReward(subjectId, score, target1, target2, current) {
   return reward;
 }
 
-// 总奖励计算
+// 总奖励计算 - 与PDF计算顺序一致
 function calculateReward() {
   let totalReward = 0;
   let allPassed = true;
@@ -74,20 +74,20 @@ function calculateReward() {
     }
   });
   
-  // 整体奖励
+  // 听写奖励（先应用听写奖励）
+  const dictationCount = parseInt(document.getElementById('dictation-count').value) || 0;
+  const bonusMultiplier = 1 + (dictationCount * 0.005);
+  let finalReward = totalReward * bonusMultiplier;
+  
+  // 整体奖励（最后加ALL PASS和ALL IMPROVE）
   if (subjectsWithData === subjects.length) {
     if (allPassed) {
-      totalReward += 30;
+      finalReward += 30;  // ALL PASS奖励
       if (allImproved) {
-        totalReward += 50;
+        finalReward += 50;  // ALL IMPROVE奖励
       }
     }
   }
-  
-  // 听写奖励
-  const dictationCount = parseInt(document.getElementById('dictation-count').value) || 0;
-  const bonusMultiplier = 1 + (dictationCount * 0.005);
-  const finalReward = totalReward * bonusMultiplier;
   
   if (document.getElementById('total-reward')) {
     document.getElementById('total-reward').textContent = `RM${finalReward.toFixed(2)}`;
